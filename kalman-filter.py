@@ -85,26 +85,6 @@ class KalmanFilter:
         self.update_cov()
         return self.predicted_state
 
-def plot_predictions(system: FallingObject, n_iters: int, states_over_time: tuple[list[float]]) -> None:
-    """Plots the resulting measurements along with the kalman predictions and true states.
-    states_over_time consists of predicted_observables, measuremets, and true_observales."""
-    initial_time = system.time
-    end_time = n_iters * system.dt + initial_time
-    time = np.arange(initial_time, end_time, system.dt)
-
-    predicted_observables = states_over_time[0]
-    measurements = states_over_time[1]
-    true_observales = states_over_time[2]
-    fig = plt.figure()
-    plt.plot(time, predicted_observables, label='Kalman Filter Prediction', color='r', linewidth=1.5)
-    fig.suptitle('Kalman filter for 1-D falling object.', fontsize=20)
-    plt.plot(time, measurements, label='Measurements', color='b',linewidth=0.5)
-    plt.plot(time, true_observales, label='True Observable', color='y', linewidth=1.5)
-    plt.xlabel('Time', fontsize=20)
-    plt.ylabel('Position', fontsize=20)
-    plt.legend()
-    plt.show()
-
 def calculate_errors(states_over_time: tuple[list[float]]) -> None:
     """Calculates the mean square errors for the Kalman prediction and the measurements.
     states_over_time consists of predicted_observables, measuremets, and true_observales."""
@@ -113,8 +93,28 @@ def calculate_errors(states_over_time: tuple[list[float]]) -> None:
     true_observales = states_over_time[2]
     kalman_mse = ((predicted_observables - true_observales)**2).mean()
     measurement_mse = ((measurements - true_observales)**2).mean()
-    print(f"The Kalman MSE is: {kalman_mse}")
-    print(f"The measurement MSE is: {measurement_mse}")
+    return kalman_mse, measurement_mse
+
+def plot_predictions(system: FallingObject, n_iters: int, states_over_time: tuple[list[float]]) -> None:
+    """Plots the resulting measurements along with the kalman predictions and true states.
+    states_over_time consists of predicted_observables, measuremets, and true_observales."""
+    initial_time = system.time
+    end_time = n_iters * system.dt + initial_time
+    time = np.arange(initial_time, end_time, system.dt)
+    kalman_mse, measurement_mse = calculate_errors(states_over_time)
+
+    predicted_observables = states_over_time[0]
+    measurements = states_over_time[1]
+    true_observales = states_over_time[2]
+    fig = plt.figure()
+    plt.plot(time, predicted_observables, label=f"Kalman Filter Position Prediction. MSE: {round(kalman_mse,2)}", color='r', linewidth=1.5)
+    fig.suptitle('Kalman filter for 1-D falling object.', fontsize=20)
+    plt.plot(time, measurements, label=f"Measured Position. MSE: {round(measurement_mse,2)}", color='b',linewidth=0.5)
+    plt.plot(time, true_observales, label='True Position', color='y', linewidth=1.5)
+    plt.xlabel('Time', fontsize=20)
+    plt.ylabel('Position', fontsize=20)
+    plt.legend()
+    plt.savefig('kalman_graph.png')
 
 def kalman_process(system: FallingObject, n_iters: int) -> None:
     """Exectutes the kalman process for given parameters and number of iterations."""
@@ -136,7 +136,6 @@ def kalman_process(system: FallingObject, n_iters: int) -> None:
         predicted_observables[index] = predicted_observable[0,0]
 
     states_over_time = predicted_observables, measurements, true_observales
-    calculate_errors(states_over_time)
     plot_predictions(system, n_iters, states_over_time)
 
 def main() -> None:
