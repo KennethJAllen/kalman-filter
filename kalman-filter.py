@@ -11,15 +11,16 @@ class System:
         self.validate_dimenstions()
 
     def get_state(self):
-        """Returns the n x 1 dimensional true state of the system."""
+        """The n x 1 state of the system, x."""
         return self.state
 
     def get_state_covariance(self):
-        """Returns the n x n covariance matrix of the state."""
+        """The n x n covariance matrix P of the state."""
         return self.state_covariance
 
     def state_transition_matrix(self) -> np.ndarray:
-        """The n x n state transition matrix A which describes the transition from the previous state to the next state."""
+        """The n x n state transition matrix A.
+        Describes the transition from the previous state to the next state."""
         raise NotImplementedError("Subclasses should implement this method.")
 
     def process_noise_cov(self) -> np.ndarray:
@@ -28,7 +29,8 @@ class System:
         raise NotImplementedError("Subclasses should implement this method.")
 
     def transformation_matrix(self) -> np.ndarray:
-        """The m x n transformation matrix H that transforms a system from the state space to the measurement space."""
+        """The m x n transformation matrix H.
+        Transforms a system from the state space to the measurement space."""
         raise NotImplementedError("Subclasses should implement this method.")
 
     def measurement_noise(self) -> np.ndarray:
@@ -40,7 +42,8 @@ class System:
         raise NotImplementedError("Subclasses should implement this method.")
 
     def control_vector(self) -> np.ndarray:
-        """The p x 1 control vector u which represents influence on the state not described by the state itself."""
+        """The p x 1 control vector u .
+        Represents influence on the state not described by the state itself."""
         raise NotImplementedError("Subclasses should implement this method.")
 
     def control_matrix(self) -> np.ndarray:
@@ -49,7 +52,8 @@ class System:
 
     def update_true_state(self) -> None:
         """Updates the true state of the system."""
-        self.state = self.state_transition_matrix() @ self.state + self.control_matrix() @ self.control_vector()
+        control_update = self.control_matrix() @ self.control_vector()
+        self.state = self.state_transition_matrix() @ self.state + control_update
 
     def get_measurement(self) -> np.ndarray:
         """Get an artificial measurement for the given state."""
@@ -103,14 +107,15 @@ class FallingObject(System):
     def __init__(self, initial_position: float = 0,
                  initial_velocity: float = 0,
                  dt: float = 0.1,
-                 gravity=9.81):
+                 gravity=-9.81):
         self.dt = dt
         self.gravity = gravity
         initial_state = np.array([[initial_position], [initial_velocity]])
         super().__init__(initial_state)
 
     def state_transition_matrix(self) -> np.ndarray:
-        """The n x n state transition matrix A which describes the transition from the previous state to the next state."""
+        """The n x n state transition matrix A.
+        Describes the transition from the previous state to the next state."""
         return np.array([[1,self.dt],[0,1]])
 
     def process_noise_cov(self) -> np.ndarray:
@@ -120,7 +125,8 @@ class FallingObject(System):
                          [(self.dt**3)/2, self.dt**2]]) * 0.25**2
 
     def transformation_matrix(self) -> np.ndarray:
-        """The m x n transformation matrix H that transforms a system from the state space to the measurement space."""
+        """The m x n transformation matrix H.
+        Transforms a system from the state space to the measurement space."""
         return np.array([[1, 0]])
 
     def measurement_noise(self) -> np.ndarray:
@@ -134,7 +140,8 @@ class FallingObject(System):
         return np.array([[0.25**2]])
 
     def control_vector(self) -> np.ndarray:
-        """The p x 1 control vector u which represents influence on the state not described by the state itself."""
+        """The p x 1 control vector u.
+        Represents influence on the state not described by the state itself."""
         return np.array([[self.gravity]])
 
     def control_matrix(self) -> np.ndarray:

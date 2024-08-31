@@ -6,7 +6,7 @@ An implementation of the Kalman filter for predicting the dynamics of a falling 
 
 1) Clone the repo.
 
-2) `pip install requirements.txt`
+2) `pip install -r requirements.txt`
 
 3) Execute the file `kalman-filter.py`. This will generate a graph displaying the measured position, actual position, and predicted position via Kalman filter over time. Aditionally, the MSE of the measured position and the predicted position will be printed.
 
