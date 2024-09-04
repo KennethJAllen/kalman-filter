@@ -23,6 +23,10 @@ class System:
         Describes the transition from the previous state to the next state."""
         raise NotImplementedError("Subclasses should implement this method.")
 
+    def process_noise(self) -> np.ndarray:
+        """The n x 1 normally distributed process noise w representing noise in the state of the system."""
+        raise NotImplementedError("Subclasses should implement this method.")
+
     def process_noise_cov(self) -> np.ndarray:
         """The n x n covairance uncertainty matrix Q from the environment.
         It is assumed that the process noise w is distributed w ~ N(0,Q)."""
@@ -52,8 +56,15 @@ class System:
 
     def update_true_state(self) -> None:
         """Updates the true state of the system."""
-        control_update = self.control_matrix() @ self.control_vector()
-        self.state = self.state_transition_matrix() @ self.state + control_update
+        if self.process_noise() is not None:
+            process_noise = self.process_noise()
+        else:
+            process_nosie = 0
+        if self.control_matrix() is not None and self.control_vector() is not None:
+            control_update = self.control_matrix() @ self.control_vector()
+        else:
+            control_update = 0
+        self.state = self.state_transition_matrix() @ self.state + control_update + process_noise
 
     def get_measurement(self) -> np.ndarray:
         """Get an artificial measurement for the given state."""
@@ -63,20 +74,25 @@ class System:
         """Validate the dimensions of the system matrices."""
         # validate state dimensions
         state_dims = np.shape(self.state)
-        state_dim = state_dims[0]
+        state_dim = state_dims[0] # n
         if state_dims != (state_dim, 1):
             raise ValueError(f"The system state does not have the correct dimensions: {state_dims}")
         # validate state transition matrix dimensions
         state_transition_matrix_dims = np.shape(self.state_transition_matrix())
         if state_transition_matrix_dims != (state_dim, state_dim):
             raise ValueError(f"The state transition matrix does not have the correct dimensions: {state_transition_matrix_dims}")
+        # validate processs noise dimensions
+        if self.process_noise() is not None:
+            process_noise_dims = np.shape(self.process_noise())
+            if process_noise_dims != (state_dim, 1):
+                raise ValueError(f"The process noise does not have the correct dimensions: {process_noise_dims}.")
         # validate process noise covariance matrix dimensions
         process_noise_cov_dims = np.shape(self.process_noise_cov())
         if process_noise_cov_dims != state_transition_matrix_dims:
             raise ValueError(f"The process noise covariance matrix does not have the correct dimensions: {process_noise_cov_dims}")
         # validate transformation matrix dimensions
         transformation_matrix_dims = np.shape(self.transformation_matrix())
-        measurement_dim = transformation_matrix_dims[0]
+        measurement_dim = transformation_matrix_dims[0] # m
         if transformation_matrix_dims != (measurement_dim, state_dim):
             raise ValueError(f"The transformation matrix does not have the correct dimensions: {transformation_matrix_dims}")
         # validate measurement dimensions
@@ -92,24 +108,29 @@ class System:
         if measurement_noise_cov_dims != (measurement_dim, measurement_dim):
             raise ValueError(f"The measurement noise covariance matrix does not have the correct dimensions: {measurement_noise_cov_dims}")
         # validate control vector dimensions
-        control_vec_dims = np.shape(self.control_vector())
-        control_vec_dim = control_vec_dims[0]
-        if control_vec_dims != (control_vec_dim, 1):
-            raise ValueError(f"The system control vector does not have the correct dimensions: {control_vec_dims}")
+        if self.control_vector() is not None:
+            control_vec_dims = np.shape(self.control_vector())
+            control_vec_dim = control_vec_dims[0]
+            if control_vec_dims != (control_vec_dim, 1):
+                raise ValueError(f"The system control vector does not have the correct dimensions: {control_vec_dims}")
         # validate control matrix dimensions
-        control_mat_dims = np.shape(self.control_matrix())
-        if control_mat_dims != (state_dim, control_vec_dim):
-            raise ValueError(f"The system control matrix does not have the correct dimensions: {control_mat_dims}")
+        if self.control_matrix() is not None:
+            control_mat_dims = np.shape(self.control_matrix())
+            if control_mat_dims != (state_dim, control_vec_dim):
+                raise ValueError(f"The system control matrix does not have the correct dimensions: {control_mat_dims}")
         print("Dimensions validated.")
 
 class FallingObject(System):
-    """A system representing a falling object."""
+    """A system representing a falling object.
+    Solves ode: x'' = -9.8."""
     def __init__(self, initial_position: float = 0,
-                 initial_velocity: float = 0,
+                 initial_velocity: float = 25,
                  dt: float = 0.1,
-                 gravity=-9.81):
+                 gravity:float = -9.81,
+                 std_acc: float  = 0.25):
         self.dt = dt
         self.gravity = gravity
+        self.std_acc = std_acc
         initial_state = np.array([[initial_position], [initial_velocity]])
         super().__init__(initial_state)
 
@@ -117,12 +138,15 @@ class FallingObject(System):
         """The n x n state transition matrix A.
         Describes the transition from the previous state to the next state."""
         return np.array([[1,self.dt],[0,1]])
+    
+    def process_noise(self) -> np.ndarray:
+        """The n x 1 normally distributed process noise w representing noise in the state of the system."""
+        return np.array([[(self.dt)**2 / 2],[self.dt]]) * self.std_acc
 
     def process_noise_cov(self) -> np.ndarray:
         """The n x n covairance uncertainty matrix Q from the environment.
         It is assumed that the process noise w is distributed w ~ N(0,Q)."""
-        return np.array([[(self.dt**4)/4, (self.dt**3)/2],
-                         [(self.dt**3)/2, self.dt**2]]) * 0.25**2
+        return self.process_noise() @ self.process_noise().T
 
     def transformation_matrix(self) -> np.ndarray:
         """The m x n transformation matrix H.
@@ -137,7 +161,7 @@ class FallingObject(System):
 
     def measurement_noise_cov(self) -> np.ndarray:
         """The m x m covariance of the measurement noise R. It is assume that v ~ N(0,R)."""
-        return np.array([[0.25**2]])
+        return np.array([[self.std_acc**2]])
 
     def control_vector(self) -> np.ndarray:
         """The p x 1 control vector u.
@@ -146,7 +170,68 @@ class FallingObject(System):
 
     def control_matrix(self) -> np.ndarray:
         """The n x p control matrix B which maps control vector u to state space."""
-        return np.array([[0.5*self.dt**2], [self.dt]])
+        return np.array([[self.dt**2 / 2], [self.dt]])
+
+class HarmonicOscillator(System):
+    """A system representing a dampened harmonic oscillator.
+    If dampening_coeff**2 < 4*mass*spring_constant, then the system is underdampened.
+    If equal, the system is critically dampened. Otherwise it is over dampened.
+    Solves ode: mass*x'' + dampening_coeff*x' + spring_constant*x = 0."""
+    def __init__(self, initial_position: float = 0,
+                 initial_velocity: float = 200,
+                 dt: float = 0.1,
+                 mass: float = 2,
+                 dampening_coeff: float = 2,
+                 spring_constant: float = 20,
+                 std_acc: float = 0.25):
+        self.dt = dt
+        self.mass = mass # m
+        self.dampending_coeff = dampening_coeff # b
+        self.spring_constant = spring_constant # k
+        self.std_acc = std_acc
+        initial_state = np.array([[initial_position], [initial_velocity]])
+        super().__init__(initial_state)
+
+    def state_transition_matrix(self) -> np.ndarray:
+        """The n x n state transition matrix A.
+        Describes the transition from the previous state to the next state."""
+        a11 = 1 - (self.dt ** 2) * self.spring_constant/(2*self.mass)
+        a12 = self.dt - (self.dt ** 2) * self.dampending_coeff/(2*self.mass)
+        a21 = -self.dt * self.spring_constant/self.mass
+        a22 = 1 - self.dt * self.dampending_coeff/self.mass
+        return np.array([[a11, a12],[a21, a22]])
+
+    def process_noise(self) -> np.ndarray:
+        """The n x 1 normally distributed process noise w representing noise in the state of the system."""
+        return np.array([[(self.dt)**2 / 2],[self.dt]]) * self.std_acc
+
+    def process_noise_cov(self) -> np.ndarray:
+        """The n x n covairance uncertainty matrix Q from the environment.
+        It is assumed that the process noise w is distributed w ~ N(0,Q)."""
+        return self.process_noise() @ self.process_noise().T 
+
+    def transformation_matrix(self) -> np.ndarray:
+        """The m x n transformation matrix H.
+        Transforms a system from the state space to the measurement space."""
+        return np.array([[1, 0]])
+
+    def measurement_noise(self) -> np.ndarray:
+        """The m x 1 normally distributed measurement noise v."""
+        noise_variance = 50
+        noise = np.random.normal(0, noise_variance)
+        return np.array([[noise]])
+
+    def measurement_noise_cov(self) -> np.ndarray:
+        """The m x m covariance of the measurement noise R. It is assume that v ~ N(0,R)."""
+        return np.array([[self.std_acc**2]])
+
+    def control_vector(self) -> np.ndarray:
+        """The p x 1 control vector u.
+        Represents influence on the state not described by the state itself."""
+        return None
+    def control_matrix(self) -> np.ndarray:
+        """The n x p control matrix B which maps control vector u to state space."""
+        return None
 
 class KalmanFilter:
     """Implements the Kalman filter for given input data."""
@@ -162,7 +247,10 @@ class KalmanFilter:
         """Given state vector and control vector, returns a priori state vector estimate."""
         A = self.system.state_transition_matrix()
         B = self.system.control_matrix()
-        apriori_state =  A @ self.predicted_state + B @ self.system.control_vector()
+        if B is not None and self.system.control_vector() is not None:
+            apriori_state =  A @ self.predicted_state + B @ self.system.control_vector()
+        else:
+            apriori_state =  A @ self.predicted_state
         self.apriori_state = apriori_state
 
     def update_apriori_cov(self) -> None:
@@ -178,7 +266,7 @@ class KalmanFilter:
         H = self.system.transformation_matrix()
         numerator = self.apriori_cov @ H.T
         denominator = H @ numerator + R
-        kalman_gain = np.linalg.lstsq(denominator.T, numerator.T)[0].T
+        kalman_gain = np.linalg.lstsq(denominator.T, numerator.T, rcond=None)[0].T
         self.kalman_gain = kalman_gain
 
     def update_prediction(self, measurement: np.ndarray) ->  None:
@@ -215,12 +303,36 @@ def calculate_errors(states_over_time: tuple[list[float]]) -> None:
     measurement_mse = ((measurements - true_observales)**2).mean()
     return kalman_mse, measurement_mse
 
-def plot_predictions(system: FallingObject, n_iters: int, states_over_time: tuple[list[float]]) -> None:
+def kalman_process(system: System, num_iters: int) -> tuple[np.ndarray]:
+    """Exectutes the kalman process for given parameters and number of iterations."""
+    kalman = KalmanFilter(system)
+    # initialize arrays recording states over time
+    true_observales = np.zeros(num_iters)
+    measurements = np.zeros(num_iters)
+    predicted_observables = np.zeros(num_iters)
+    # Update the state of the system and forcast with Kalman filter
+    for index in range(num_iters):
+        system.update_true_state() # update the actual system state to the next time step.
+        measurement = system.get_measurement()
+        predicted_state = kalman.update(measurement) # get the next Kalman filter prediction.
+        predicted_observable = kalman.system.transformation_matrix() @ predicted_state
+        true_observable = kalman.system.transformation_matrix() @ system.state
+        # record observables. One records the observables in the first position.
+        true_observales[index] = true_observable[0,0]
+        measurements[index] = measurement[0,0]
+        predicted_observables[index] = predicted_observable[0,0]
+
+    return predicted_observables, measurements, true_observales
+
+def plot_predictions(n_iters: int,
+                     dt: float,
+                     states_over_time: tuple[list[float]],
+                     title: str = "System") -> None:
     """Plots the resulting measurements along with the kalman predictions and true states.
     states_over_time consists of predicted_observables, measuremets, and true_observales."""
     initial_time = 0
-    end_time = n_iters * system.dt + initial_time
-    time = np.arange(initial_time, end_time, system.dt)
+    end_time = n_iters * dt + initial_time
+    time = np.arange(initial_time, end_time, dt)
     kalman_mse, measurement_mse = calculate_errors(states_over_time)
 
     predicted_observables = states_over_time[0]
@@ -228,40 +340,26 @@ def plot_predictions(system: FallingObject, n_iters: int, states_over_time: tupl
     true_observales = states_over_time[2]
     fig = plt.figure()
     plt.plot(time, predicted_observables, label=f"Kalman Filter Position Prediction. MSE: {round(kalman_mse,2)}", color='r', linewidth=1.5)
-    fig.suptitle('Kalman filter for 1-D falling object.', fontsize=20)
+    fig.suptitle(f"Kalman filter for {title}.", fontsize=20)
     plt.plot(time, measurements, label=f"Measured Position. MSE: {round(measurement_mse,2)}", color='b',linewidth=0.5)
     plt.plot(time, true_observales, label='True Position', color='y', linewidth=1.5)
-    plt.xlabel('Time', fontsize=20)
-    plt.ylabel('Position', fontsize=20)
+    plt.xlabel('Time', fontsize=15)
+    plt.ylabel('Position', fontsize=15)
     plt.legend()
-    plt.savefig('kalman_graph.png')
-
-def kalman_process(system: FallingObject, n_iters: int) -> None:
-    """Exectutes the kalman process for given parameters and number of iterations."""
-    kalman = KalmanFilter(system)
-    true_observales = np.zeros(n_iters)
-    measurements = np.zeros(n_iters)
-    predicted_observables = np.zeros(n_iters)
-    for index in range(n_iters):
-        system.update_true_state() # update the actual system state to the next time step.
-        measurement = system.get_measurement()
-        predicted_state = kalman.update(measurement) # get the next Kalman filter prediction.
-        predicted_observable = kalman.system.transformation_matrix() @ predicted_state
-        true_state = system.state
-        true_observable = kalman.system.transformation_matrix() @ true_state
-
-        true_observales[index] = true_observable[0,0]
-        measurements[index] = measurement[0,0]
-        predicted_observables[index] = predicted_observable[0,0]
-
-    states_over_time = predicted_observables, measurements, true_observales
-    plot_predictions(system, n_iters, states_over_time)
+    directory = "images/"
+    file_name = title.lower().replace(" ", "_")
+    plt.savefig(f"{directory}{file_name}.png")
 
 def main() -> None:
     """Accessor for running the module."""
     n_iters = 100
-    system = FallingObject()
-    kalman_process(system, n_iters)
+    dt = 0.1
+    falling_object = FallingObject(dt = dt)
+    falling_object_states = kalman_process(falling_object, n_iters)
+    plot_predictions(n_iters, dt, falling_object_states, title = "Falling Object")
+    harmonic_oscillator = HarmonicOscillator(dt = dt)
+    harmonic_oscillator_states = kalman_process(harmonic_oscillator, n_iters)
+    plot_predictions(n_iters, dt, harmonic_oscillator_states, title = "Harmonic Oscillator")
 
 if __name__ == "__main__":
     main()
