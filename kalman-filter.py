@@ -57,14 +57,14 @@ class System:
     def update_true_state(self) -> None:
         """Updates the true state of the system."""
         if self.process_noise() is not None:
-            process_noise = self.process_noise()
+            noise = self.process_noise()
         else:
-            process_nosie = 0
+            nosie = 0
         if self.control_matrix() is not None and self.control_vector() is not None:
             control_update = self.control_matrix() @ self.control_vector()
         else:
             control_update = 0
-        self.state = self.state_transition_matrix() @ self.state + control_update + process_noise
+        self.state = self.state_transition_matrix() @ self.state + control_update + noise
 
     def get_measurement(self) -> np.ndarray:
         """Get an artificial measurement for the given state."""
@@ -127,7 +127,7 @@ class FallingObject(System):
                  initial_velocity: float = 25,
                  dt: float = 0.1,
                  gravity:float = -9.81,
-                 std_acc: float  = 0.25):
+                 std_acc: float  = 10):
         self.dt = dt
         self.gravity = gravity
         self.std_acc = std_acc
@@ -141,12 +141,18 @@ class FallingObject(System):
     
     def process_noise(self) -> np.ndarray:
         """The n x 1 normally distributed process noise w representing noise in the state of the system."""
-        return np.array([[(self.dt)**2 / 2],[self.dt]]) * self.std_acc
+        std_position = self.std_acc * (self.dt)**2 / 2
+        std_velocity = self.dt
+        position_noise = np.random.normal(0, std_position)
+        velocity_noise = np.random.normal(0, std_velocity)
+        return np.array([[position_noise],[velocity_noise]])
 
     def process_noise_cov(self) -> np.ndarray:
         """The n x n covairance uncertainty matrix Q from the environment.
         It is assumed that the process noise w is distributed w ~ N(0,Q)."""
-        return self.process_noise() @ self.process_noise().T
+        std_position = self.std_acc * (self.dt)**2 / 2
+        std_velocity = self.dt
+        return np.array([[std_position**2, std_position*std_velocity],[std_position*std_velocity, std_velocity**2]]) * self.std_acc ** 2
 
     def transformation_matrix(self) -> np.ndarray:
         """The m x n transformation matrix H.
@@ -183,7 +189,7 @@ class HarmonicOscillator(System):
                  mass: float = 2,
                  dampening_coeff: float = 2,
                  spring_constant: float = 20,
-                 std_acc: float = 0.25):
+                 std_acc: float = 10):
         self.dt = dt
         self.mass = mass # m
         self.dampending_coeff = dampening_coeff # b
@@ -203,12 +209,18 @@ class HarmonicOscillator(System):
 
     def process_noise(self) -> np.ndarray:
         """The n x 1 normally distributed process noise w representing noise in the state of the system."""
-        return np.array([[(self.dt)**2 / 2],[self.dt]]) * self.std_acc
+        std_position = self.std_acc * (self.dt)**2 / 2
+        std_velocity = self.dt
+        position_noise = np.random.normal(0, std_position)
+        velocity_noise = np.random.normal(0, std_velocity)
+        return np.array([[position_noise],[velocity_noise]])
 
     def process_noise_cov(self) -> np.ndarray:
         """The n x n covairance uncertainty matrix Q from the environment.
         It is assumed that the process noise w is distributed w ~ N(0,Q)."""
-        return self.process_noise() @ self.process_noise().T 
+        std_position = self.std_acc * (self.dt)**2 / 2
+        std_velocity = self.dt
+        return np.array([[std_position**2, std_position*std_velocity],[std_position*std_velocity, std_velocity**2]]) * self.std_acc ** 2
 
     def transformation_matrix(self) -> np.ndarray:
         """The m x n transformation matrix H.
