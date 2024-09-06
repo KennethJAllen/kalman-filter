@@ -59,7 +59,7 @@ class System:
         if self.process_noise() is not None:
             noise = self.process_noise()
         else:
-            nosie = 0
+            noise = 0
         if self.control_matrix() is not None and self.control_vector() is not None:
             control_update = self.control_matrix() @ self.control_vector()
         else:
