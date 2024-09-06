@@ -34,6 +34,11 @@ The state vector is the position and velocity of the system:
 \textbf{x}_k = \begin{bmatrix} x_k \\ v_k \end{bmatrix}
 ```
 
+We can formulate the above equations in matrix form:
+```math
+\begin{bmatrix} x_{k+1} \\ v_{k+1} \end{bmatrix} = \begin{bmatrix} 1 & \Delta t \\ 0 & 1\end{bmatrix} \begin{bmatrix} x_k \\ v_k \end{bmatrix} + \begin{bmatrix} \frac{\Delta t ^2}{2} \\ \Delta t \end{bmatrix} g
+```
+
 ![Kalman filter results.](images/falling_object.png)
 
 ### Harmonic Oscillator
