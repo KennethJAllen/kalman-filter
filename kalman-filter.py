@@ -120,6 +120,51 @@ class System:
                 raise ValueError(f"The system control matrix does not have the correct dimensions: {control_mat_dims}")
         print("Dimensions validated.")
 
+class RandomConstant(System):
+    """A state representing a random constant.
+    We will assume there is a high measurement noise and low process noise."""
+    def __init__(self, std_measurement = 0.1, std_process = 0.00001):
+        self.std_measurement = std_measurement
+        self.std_process = std_process
+        initial_state = np.array([[np.random.uniform(0,1)]])
+        super().__init__(initial_state)
+
+    def state_transition_matrix(self) -> np.ndarray:
+        """The n x n state transition matrix A.
+        Describes the transition from the previous state to the next state."""
+        return np.array([[1]])
+
+    def process_noise(self) -> np.ndarray:
+        """The n x 1 normally distributed process noise w representing noise in the state of the system."""
+        return np.array([[np.random.normal(0, self.std_process)]])
+
+    def process_noise_cov(self) -> np.ndarray:
+        """The n x n covairance uncertainty matrix Q from the environment.
+        It is assumed that the process noise w is distributed w ~ N(0,Q)."""
+        return np.array([[self.std_process ** 2]])
+
+    def transformation_matrix(self) -> np.ndarray:
+        """The m x n transformation matrix H.
+        Transforms a system from the state space to the measurement space."""
+        return np.array([[1]])
+
+    def measurement_noise(self) -> np.ndarray:
+        """The m x 1 normally distributed measurement noise v."""
+        return np.array([[np.random.normal(0, self.std_measurement)]])
+
+    def measurement_noise_cov(self) -> np.ndarray:
+        """The m x m covariance of the measurement noise R. It is assume that v ~ N(0,R)."""
+        return np.array([[self.std_measurement ** 2]])
+
+    def control_vector(self) -> np.ndarray:
+        """The p x 1 control vector u .
+        Represents influence on the state not described by the state itself."""
+        return None
+
+    def control_matrix(self) -> np.ndarray:
+        """The n x p control matrix B which maps control vector u to state space."""
+        return None
+
 class FallingObject(System):
     """A system representing a falling object.
     Solves ode: x'' = g, where g = -9.81."""
@@ -370,6 +415,10 @@ def plot_predictions(n_iters: int,
 def main() -> None:
     """Accessor for running the module."""
     n_iters = 50
+    random_constant = RandomConstant()
+    random_constant_states = kalman_process(random_constant, n_iters)
+    plot_predictions(n_iters, 1, random_constant_states, title = "Random Constant")
+
     dt = 0.1
     falling_object = FallingObject(dt = dt)
     falling_object_states = kalman_process(falling_object, n_iters)
