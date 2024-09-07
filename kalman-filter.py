@@ -122,15 +122,17 @@ class System:
 
 class FallingObject(System):
     """A system representing a falling object.
-    Solves ode: x'' = -9.8."""
+    Solves ode: x'' = g, where g = -9.81."""
     def __init__(self, initial_position: float = 0,
                  initial_velocity: float = 25,
                  dt: float = 0.1,
                  gravity:float = -9.81,
-                 std_acc: float  = 10):
+                 std_acc: float  = 0.25,
+                 std_measurement: float = 5):
         self.dt = dt
         self.gravity = gravity
         self.std_acc = std_acc
+        self.std_measurement = std_measurement
         initial_state = np.array([[initial_position], [initial_velocity]])
         super().__init__(initial_state)
 
@@ -161,13 +163,12 @@ class FallingObject(System):
 
     def measurement_noise(self) -> np.ndarray:
         """The m x 1 normally distributed measurement noise v."""
-        noise_variance = 50
-        noise = np.random.normal(0, noise_variance)
+        noise = np.random.normal(0, self.std_measurement)
         return np.array([[noise]])
 
     def measurement_noise_cov(self) -> np.ndarray:
         """The m x m covariance of the measurement noise R. It is assume that v ~ N(0,R)."""
-        return np.array([[self.std_acc**2]])
+        return np.array([[self.std_measurement**2]])
 
     def control_vector(self) -> np.ndarray:
         """The p x 1 control vector u.
@@ -178,33 +179,38 @@ class FallingObject(System):
         """The n x p control matrix B which maps control vector u to state space."""
         return np.array([[self.dt**2 / 2], [self.dt]])
 
-class HarmonicOscillator(System):
-    """A system representing a dampened harmonic oscillator.
+class DampenedOscillator(System):
+    """A system representing a dampened oscillator.
     If dampening_coeff**2 < 4*mass*spring_constant, then the system is underdampened.
     If equal, the system is critically dampened. Otherwise it is over dampened.
     Solves ode: mass*x'' + dampening_coeff*x' + spring_constant*x = 0."""
     def __init__(self, initial_position: float = 0,
                  initial_velocity: float = 200,
                  dt: float = 0.1,
-                 mass: float = 2,
+                 mass: float = 1,
                  dampening_coeff: float = 2,
                  spring_constant: float = 20,
-                 std_acc: float = 10):
+                 std_acc: float = 0.25,
+                 std_measurement: float = 5):
         self.dt = dt
         self.mass = mass # m
         self.dampending_coeff = dampening_coeff # b
         self.spring_constant = spring_constant # k
         self.std_acc = std_acc
+        self.std_measurement = std_measurement
         initial_state = np.array([[initial_position], [initial_velocity]])
         super().__init__(initial_state)
 
     def state_transition_matrix(self) -> np.ndarray:
         """The n x n state transition matrix A.
         Describes the transition from the previous state to the next state."""
-        a11 = 1 - (self.dt ** 2) * self.spring_constant/(2*self.mass)
-        a12 = self.dt - (self.dt ** 2) * self.dampending_coeff/(2*self.mass)
-        a21 = -self.dt * self.spring_constant/self.mass
-        a22 = 1 - self.dt * self.dampending_coeff/self.mass
+        m = self.mass
+        b = self.dampending_coeff
+        k = self.spring_constant
+        a11 = 1 - (self.dt**2)*k/(2*m)
+        a12 = self.dt - (self.dt ** 2)*b/(2 * m)
+        a21 = -self.dt*k/m + (self.dt**2)*b*k/(2*m**2)
+        a22 = 1 - self.dt*b/m + (self.dt**2)*(b**2-m*k)/(2*m**2)
         return np.array([[a11, a12],[a21, a22]])
 
     def process_noise(self) -> np.ndarray:
@@ -229,13 +235,12 @@ class HarmonicOscillator(System):
 
     def measurement_noise(self) -> np.ndarray:
         """The m x 1 normally distributed measurement noise v."""
-        noise_variance = 50
-        noise = np.random.normal(0, noise_variance)
+        noise = np.random.normal(0, self.std_measurement)
         return np.array([[noise]])
 
     def measurement_noise_cov(self) -> np.ndarray:
         """The m x m covariance of the measurement noise R. It is assume that v ~ N(0,R)."""
-        return np.array([[self.std_acc**2]])
+        return np.array([[self.std_measurement**2]])
 
     def control_vector(self) -> np.ndarray:
         """The p x 1 control vector u.
@@ -352,7 +357,7 @@ def plot_predictions(n_iters: int,
     true_observales = states_over_time[2]
     fig = plt.figure()
     plt.plot(time, predicted_observables, label=f"Kalman Filter Position Prediction. MSE: {round(kalman_mse,2)}", color='r', linewidth=1.5)
-    fig.suptitle(f"Kalman filter for {title}.", fontsize=20)
+    fig.suptitle(f"Kalman filter for {title}", fontsize=20)
     plt.plot(time, measurements, label=f"Measured Position. MSE: {round(measurement_mse,2)}", color='b',linewidth=0.5)
     plt.plot(time, true_observales, label='True Position', color='y', linewidth=1.5)
     plt.xlabel('Time', fontsize=15)
@@ -364,14 +369,14 @@ def plot_predictions(n_iters: int,
 
 def main() -> None:
     """Accessor for running the module."""
-    n_iters = 100
+    n_iters = 50
     dt = 0.1
     falling_object = FallingObject(dt = dt)
     falling_object_states = kalman_process(falling_object, n_iters)
     plot_predictions(n_iters, dt, falling_object_states, title = "Falling Object")
-    harmonic_oscillator = HarmonicOscillator(dt = dt)
-    harmonic_oscillator_states = kalman_process(harmonic_oscillator, n_iters)
-    plot_predictions(n_iters, dt, harmonic_oscillator_states, title = "Harmonic Oscillator")
+    dampened_oscillator = DampenedOscillator(dt = dt)
+    harmonic_oscillator_states = kalman_process(dampened_oscillator, n_iters)
+    plot_predictions(n_iters, dt, harmonic_oscillator_states, title = "Dampened Oscillator")
 
 if __name__ == "__main__":
     main()
