@@ -114,4 +114,4 @@ A &= \begin{bmatrix} 1 - \frac{k}{2m} \Delta t^2 & \Delta t - \frac{b}{2m} \Delt
 
 Welch, Greg, and Gary Bishop. "An introduction to the Kalman filter." (1995): 2.
 
-Rahmadsadli. “Object Tracking: Simple Implementation of Kalman Filter in Python.” Machine Learning Space, 8 Nov. 2023, machinelearningspace.com/object-tracking-python.
+Rahmadsadli. “Object Tracking: Simple Implementation of Kalman Filter in Python.” Machine Learning Space, 8 Nov. 2023, [machinelearningspace.com/object-tracking-python](https://machinelearningspace.com/object-tracking-python/).
