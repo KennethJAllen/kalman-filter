@@ -32,7 +32,7 @@ $w_k$ and $v_k$ are random vectors that represent process and measurement noise 
 
 $$
 \begin{align}
-w_k &\sim \mathcal{N}(0,Q)
+w_k &\sim \mathcal{N}(0,Q) \\
 v_k &\sim \mathcal{N}(0,R).
 \end{align}
 $$
