@@ -33,32 +33,66 @@ $w_k$ and $v_k$ are random vectors that represent process and measurement noise 
 $$
 \begin{align}
 w_k &\sim \mathcal{N}(0,Q) \\
-v_k &\sim \mathcal{N}(0,R).
+v_k &\sim \mathcal{N}(0,R)
 \end{align}
 $$
+
+where $Q$ are $R$ are the respective covariance matrices.
 
 To find our state approximation $\hat{x}_k$, we first define the *a priori* state estimate
 ```math
 \hat{x}_k^- = A\hat{x}_{k-1} + B u_k
 ```
 
-which is what we get if we assume our previous estimate of our state was correct. That is, if
-```math
-\hat{x}_{k-1} = x_{k-1}.
-```
-In practice, we have not correctly identified the true state of the system, so our a priori estimate needs to be updated based on the residule of the measurement $z_k$ and how much it differs from the measurement prediction $H x_k^-$. That is, we need to find a matrix $K_k$ such that
+The a priori state estimate $\hat{x}\_k^-$ is correct if we assume our previous estimate $\hat{x}\_{k-1}$ of our state was correct. That is, if $\hat{x}\_{k-1} = x\_{k-1}.$
+
+In practice, we have not correctly identified the true state of the system, so our a priori estimate needs to be updated based on the residule of the measurement $z_k$ and how much it differs from the measurement prediction $H x_k^-$. That is, we need to find a matrix $K_k$ known as the *Kalman gain* that gives us our *a posteriori* estimate
 
 ```math
 \hat{x}_k = \hat{x}_k^- + K_k(z_k - H \hat{x}_k^-).
 ```
 
-How do we find such a $K_k$?
+How do we find such a $K_k$? We first define the *a priori* and *a posteriori* estimate errors respectively
+```math
+\begin{align}
+e_k^- &= x_k - \hat{x}_k^- \\
+e_k &= x_k - \hat{x}_k.
+\end{align}
+```
+
+Then the a priori and a posteriori estimate error covariances are respectively
+```math
+\begin{align}
+P_k^- &= E[e_k^- e_k^{- \top}] \\
+P_k &= E[e_k e_k^\top].
+\end{align}
+```
+
+The choice of $K_k$ as a function of $P_k^-$ that minimized the a posteriori error covariance $P_k$ is then
+
+```math
+K_k = P_k^- H^\top (HP_k^-H^\top + R)^{-1}.
+```
+
+## Discrete Kalman Filter Algorithm
+
+We can now define the discrete Kalman filter algorithm in three parts. At each step, we first calculate the a priori estimates. Next we calculate the Kalman gain, and finally we calculate the a posteriori estimates.
+
+```math
+\begin{align}
+  1)& \hat{x}_k^- = A\hat{x}_{k-1} + B u_k \\
+  2)& P_k^- = AP_{k-1}A^\top + Q\\
+  3)& K_k = P_k^- H^\top (HP_k^-H^\top + R)^{-1} \\
+  4)& \hat{x}_k = \hat{x}_k^- + K_k(z_k - H \hat{x}_k^-)\\
+  5)& P_k = (I - K_kH)P_k^-.
+\end{align} 
+```
 
 ## Systems
 
-### Falling Object
+### Projectile Motion
 
-The falling object system models a solution to the ode $x'' = g$ where $x(t)$ is the position and the constant $g$ defaults to $-9.81$. Expanding with Taylor series, we get 
+The projectile motion system models a solution to the ode $x'' = g$ where $x(t)$ is the position and the constant $g$ defaults to $-9.81$. Expanding with Taylor series, we get 
 
 $$
 x(t + \Delta t) = x(t) + \Delta t x'(t) + \frac{\Delta t ^2}{2} x''(t) + O(\Delta t ^3).
@@ -112,11 +146,11 @@ We will only measure position in this system. Therefore, our transformation matr
 H = \begin{bmatrix} 1 & 0\end{bmatrix}.
 ```
 
-Let us assume that our measurement noise has standard deviation $\sigma_z = 5$. Then our measurement noise vector $\mathbb{v}_k$ is a constant such that $\mathbb{v}_k \sim \mathcal{N}(0,\sigma_z).$ This implies that our measurement noise covariance matrix $R$ is also a constant and $R = \sigma_z^2$.
+Let us assume that our measurement noise has standard deviation $\sigma_z = 5$. Then our measurement noise vector $\mathbf{v}_k$ is a constant such that $\mathbb{v}_k \sim \mathcal{N}(0,\sigma_z).$ This implies that our measurement noise covariance matrix $R$ is also a constant and $R = \sigma_z^2$.
 
 Running the simulation, we get the following results
 
-![Kalman filter results.](images/falling_object.png)
+![falling object](images/falling_object.png)
 
 ### Dampened Oscillator
 
@@ -148,11 +182,11 @@ Letting letting $x_k = x(k \Delta t)$ and $v_k = x'(k \Delta t)$, we get $\mathb
 \begin{align}
 \mathbf{x}_k &= \begin{bmatrix} x_k \\ v_k \end{bmatrix} \\
 A &= \begin{bmatrix} 1 - \frac{k}{2m} \Delta t^2 & \Delta t - \frac{b}{2m} \Delta t^2 \\
--\frac{k}{m} \Delta t + \frac{bk}{2m^2} \Delta t ^2 & 1 - \frac{b}{m} \Delta t + \frac{b^2 -mk}{2m^2} \Delta t ^2 \end{bmatrix}
+-\frac{k}{m} \Delta t + \frac{bk}{2m^2} \Delta t ^2 & 1 - \frac{b}{m} \Delta t + \frac{b^2 -mk}{2m^2} \Delta t ^2 \end{bmatrix}.
 \end{align}
 ```
 
-![Kalman filter results.](images/dampened_oscillator.png)
+![oscillator](images/dampened_oscillator.png)
 
 ## Sources
 
