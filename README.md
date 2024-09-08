@@ -28,7 +28,7 @@ The matrix $A$ is the state transition matrix that determines how the state evol
 
 The vector $u_k$ is the optional control input, and $B$ is the control matrix maps the control input $u_k$ from the control space to the state space. Similarly, $H$ is the transformation matrix that transforms a state from the state space to the measurement space.
 
-$w_k$ and $v_k$ are random vectors that represent process and measurement noise respectively. They are assumed to have multinormal distributions such that 
+$w_k$ and $v_k$ are random vectors that represent process and measurement noise respectively. They are assumed to be independent of each other and have multinormal distributions such that 
 
 $$
 \begin{align}
@@ -36,6 +36,23 @@ w_k &\sim \mathcal{N}(0,Q) \\
 v_k &\sim \mathcal{N}(0,R).
 \end{align}
 $$
+
+To find our state approximation $\hat{x}_k$, we first define the *a priori* state estimate
+```math
+\hat{x}_k^- = A\hat{x}_{k-1} + B u_k
+```
+
+which is what we get if we assume our previous estimate of our state was correct. That is, if
+```math
+\hat{x}_{k-1} = x_{k-1}.
+```
+In practice, we have not correctly identified the true state of the system, so our a priori estimate needs to be updated based on the residule of the measurement $z_k$ and how much it differs from the measurement prediction $H x_k^-$. That is, we need to find a matrix $K_k$ such that
+
+```math
+\hat{x}_k = \hat{x}_k^- + K_k(z_k - H \hat{x}_k^-).
+```
+
+How do we find such a $K_k$?
 
 ## Systems
 
