@@ -105,6 +105,8 @@ Running the simulation, we get the following results
 
 The dampened oscillator system solves the ode $mx'' + bx' + kx = 0$.
 
+When $b^2 < 4mk$, the system is underdampened and will oscillate with exponentially decreasing amplitude. When $b^2 = 4mk$, the system is critically dampened and the amplitude decays as fast as possible. When $b^2 > 4mk$, the system is overdampened and will apporach equilibrium over a longer period of time. When $b = 0$, the system is undampened.
+
 This system is similar to the falling object as it is a second order ODE. Solving for $x''$ we get
 
 ```math
