@@ -12,6 +12,31 @@ An implementation of the Kalman filter for predicting the dynamics of a falling 
 
 ## Kalman Filter
 
+The purpose of the Kalman filter is to estimate the state of a discrete process $x_k$ that updates by the equation
+
+$$
+x_k = A x_{k-1} + Bu_k + w_{k-1}
+$$
+
+from measurements $z_k$ where
+
+$$
+z_k = H x_k + v_k.
+$$
+
+The matrix $A$ is the state transition matrix that determines how the state evolves over time.
+
+The vector $u_k$ is the optional control input, and $B$ is the control matrix maps the control input $u_k$ from the control space to the state space. Similarly, $H$ is the transformation matrix that transforms a state from the state space to the measurement space.
+
+$w_k$ and $v_k$ are random vectors that represent process and measurement noise respectively. They are assumed to have multinormal distributions such that 
+
+$$
+\begin{align}
+w_k &\sim \mathcal{N}(0,Q)
+v_k &\sim \mathcal{N}(0,R).
+\end{align}
+$$
+
 ## Systems
 
 ### Falling Object
@@ -115,3 +140,5 @@ A &= \begin{bmatrix} 1 - \frac{k}{2m} \Delta t^2 & \Delta t - \frac{b}{2m} \Delt
 Welch, Greg, and Gary Bishop. "An introduction to the Kalman filter." (1995): 2.
 
 Rahmadsadli. “Object Tracking: Simple Implementation of Kalman Filter in Python.” Machine Learning Space, 8 Nov. 2023, [machinelearningspace.com/object-tracking-python](https://machinelearningspace.com/object-tracking-python/).
+
+How a Kalman Filter Works, in Pictures | Bzarg. 11 Aug. 2015, [www.bzarg.com/p/how-a-kalman-filter-works-in-pictures](https://www.bzarg.com/p/how-a-kalman-filter-works-in-pictures/).
