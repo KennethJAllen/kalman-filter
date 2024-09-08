@@ -189,7 +189,7 @@ class FallingObject(System):
     def process_noise(self) -> np.ndarray:
         """The n x 1 normally distributed process noise w representing noise in the state of the system."""
         std_position = self.std_acc * (self.dt)**2 / 2
-        std_velocity = self.dt
+        std_velocity = self.std_acc *self.dt
         position_noise = np.random.normal(0, std_position)
         velocity_noise = np.random.normal(0, std_velocity)
         return np.array([[position_noise],[velocity_noise]])
@@ -198,8 +198,8 @@ class FallingObject(System):
         """The n x n covairance uncertainty matrix Q from the environment.
         It is assumed that the process noise w is distributed w ~ N(0,Q)."""
         std_position = self.std_acc * (self.dt)**2 / 2
-        std_velocity = self.dt
-        return np.array([[std_position**2, std_position*std_velocity],[std_position*std_velocity, std_velocity**2]]) * self.std_acc ** 2
+        std_velocity = self.std_acc *self.dt
+        return np.array([[std_position**2, std_position*std_velocity],[std_position*std_velocity, std_velocity**2]])
 
     def transformation_matrix(self) -> np.ndarray:
         """The m x n transformation matrix H.
@@ -230,13 +230,13 @@ class DampenedOscillator(System):
     If equal, the system is critically dampened. Otherwise it is over dampened.
     Solves ode: mass*x'' + dampening_coeff*x' + spring_constant*x = 0."""
     def __init__(self, initial_position: float = 0,
-                 initial_velocity: float = 200,
+                 initial_velocity: float = 30,
                  dt: float = 0.1,
                  mass: float = 1,
                  dampening_coeff: float = 2,
-                 spring_constant: float = 20,
+                 spring_constant: float = 9,
                  std_acc: float = 0.25,
-                 std_measurement: float = 5):
+                 std_measurement: float = 1.2):
         self.dt = dt
         self.mass = mass # m
         self.dampending_coeff = dampening_coeff # b
@@ -261,7 +261,7 @@ class DampenedOscillator(System):
     def process_noise(self) -> np.ndarray:
         """The n x 1 normally distributed process noise w representing noise in the state of the system."""
         std_position = self.std_acc * (self.dt)**2 / 2
-        std_velocity = self.dt
+        std_velocity = self.std_acc *self.dt
         position_noise = np.random.normal(0, std_position)
         velocity_noise = np.random.normal(0, std_velocity)
         return np.array([[position_noise],[velocity_noise]])
@@ -270,8 +270,8 @@ class DampenedOscillator(System):
         """The n x n covairance uncertainty matrix Q from the environment.
         It is assumed that the process noise w is distributed w ~ N(0,Q)."""
         std_position = self.std_acc * (self.dt)**2 / 2
-        std_velocity = self.dt
-        return np.array([[std_position**2, std_position*std_velocity],[std_position*std_velocity, std_velocity**2]]) * self.std_acc ** 2
+        std_velocity = self.std_acc * self.dt
+        return np.array([[std_position**2, std_position*std_velocity],[std_position*std_velocity, std_velocity**2]])
 
     def transformation_matrix(self) -> np.ndarray:
         """The m x n transformation matrix H.
@@ -285,7 +285,8 @@ class DampenedOscillator(System):
 
     def measurement_noise_cov(self) -> np.ndarray:
         """The m x m covariance of the measurement noise R. It is assume that v ~ N(0,R)."""
-        return np.array([[self.std_measurement**2]])
+        std_measurement_guess = 0.05 # If the guess is too low, the filter will trust the measurement more
+        return np.array([[std_measurement_guess**2]])
 
     def control_vector(self) -> np.ndarray:
         """The p x 1 control vector u.
@@ -403,7 +404,7 @@ def plot_predictions(n_iters: int,
     fig = plt.figure()
     plt.plot(time, predicted_observables, label=f"Kalman Filter Position Prediction. MSE: {round(kalman_mse,2)}", color='r', linewidth=1.5)
     fig.suptitle(f"Kalman filter for {title}", fontsize=20)
-    plt.plot(time, measurements, label=f"Measured Position. MSE: {round(measurement_mse,2)}", color='b',linewidth=0.5)
+    plt.scatter(time, measurements, label=f"Measured Position. MSE: {round(measurement_mse,3)}", facecolors='none', color='b')
     plt.plot(time, true_observales, label='True Position', color='y', linewidth=1.5)
     plt.xlabel('Time', fontsize=15)
     plt.ylabel('Position', fontsize=15)
