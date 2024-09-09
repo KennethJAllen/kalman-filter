@@ -146,7 +146,7 @@ We will only measure position in this system. Therefore, our transformation matr
 H = \begin{bmatrix} 1 & 0\end{bmatrix}.
 ```
 
-Let us assume that our measurement noise has standard deviation $\sigma_z = 5$. Then our measurement noise vector $\mathbf{v}_k$ is a constant such that $\mathbb{v}_k \sim \mathcal{N}(0,\sigma_z).$ This implies that our measurement noise covariance matrix $R$ is also a constant and $R = \sigma_z^2$.
+Let us assume that our measurement noise has standard deviation $\sigma_z = 5$. Then our measurement noise vector $\mathbf{v}_k$ is a scalar such that $\mathbf{v}_k \sim \mathcal{N}(0,\sigma_z).$ This implies that our measurement noise covariance matrix $R$ is also a constant and $R = \sigma_z^2$.
 
 Running the simulation, we get the following results
 
