@@ -98,6 +98,16 @@ We can now define the discrete Kalman filter algorithm in three parts. At each s
   ```
 ## Systems
 
+### Random Constant
+
+The random constant system is a simple but illustrative example. The goal is to estimate a random constant with low process noise but high measurement noise.
+
+The state does not change over time, so $A = 1$. There is no control input so there is no $u$ or $B$. The constant is measured directly so $H = 1$.
+
+Running the simulation, we get the following results
+
+![random constant](images/random_constant.png)
+
 ### Projectile Motion
 
 The projectile motion system models a solution to the ode $x'' = g$ where $x(t)$ is the position and the constant $g$ defaults to $-9.81$. Expanding with Taylor series, we get 
@@ -158,7 +168,7 @@ Let us assume that our measurement noise has standard deviation $\sigma_z = 5$. 
 
 Running the simulation, we get the following results
 
-![falling object](images/falling_object.png)
+![projectile motion](images/projectile_motion.png)
 
 ### Dampened Oscillator
 
@@ -166,7 +176,7 @@ The dampened oscillator system solves the ode $mx'' + bx' + kx = 0$.
 
 When $b^2 < 4mk$, the system is underdampened and will oscillate with exponentially decreasing amplitude. When $b^2 = 4mk$, the system is critically dampened and the amplitude decays as fast as possible. When $b^2 > 4mk$, the system is overdampened and will apporach equilibrium over a longer period of time. When $b = 0$, the system is undampened.
 
-This system is similar to the falling object as it is a second order ODE. Solving for $x''$ we get
+This system is similar to projectile motion as it is a second order ODE. Solving for $x''$ we get
 
 ```math
 x'' = -\frac{b}{m}x' - \frac{k}{m}x.
@@ -193,6 +203,8 @@ A &= \begin{bmatrix} 1 - \frac{k}{2m} \Delta t^2 & \Delta t - \frac{b}{2m} \Delt
 -\frac{k}{m} \Delta t + \frac{bk}{2m^2} \Delta t ^2 & 1 - \frac{b}{m} \Delta t + \frac{b^2 -mk}{2m^2} \Delta t ^2 \end{bmatrix}.
 \end{align}
 ```
+
+Running the simulation, we get the following results
 
 ![oscillator](images/dampened_oscillator.png)
 
