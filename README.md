@@ -1,6 +1,6 @@
 # kalman-filter
 
-An implementation of the Kalman filter for predicting the dynamics of a falling object based on noisy observations.
+An implementation of the Kalman filter for predicting the dynamics of various systems based on state evolutions and noisy observations.
 
 ## How to run
 
@@ -78,16 +78,24 @@ K_k = P_k^- H^\top (HP_k^-H^\top + R)^{-1}.
 
 We can now define the discrete Kalman filter algorithm in three parts. At each step, we first calculate the a priori estimates. Next we calculate the Kalman gain, and finally we calculate the a posteriori estimates.
 
-```math
-\begin{align}
-  1)& \hat{x}_k^- = A\hat{x}_{k-1} + B u_k \\
-  2)& P_k^- = AP_{k-1}A^\top + Q\\
-  3)& K_k = P_k^- H^\top (HP_k^-H^\top + R)^{-1} \\
-  4)& \hat{x}_k = \hat{x}_k^- + K_k(z_k - H \hat{x}_k^-)\\
-  5)& P_k = (I - K_kH)P_k^-.
-\end{align} 
-```
-
+1. Calculate a priori state and covariance predictions
+  ```math
+  \begin{align}
+    \hat{x}_k^- &= A\hat{x}_{k-1} + B u_k \\
+    P_k^- &= AP_{k-1}A^\top + Q\\
+  \end{align} 
+  ```
+2. Calculate Kalman gain
+  ```math
+  K_k = P_k^- H^\top (HP_k^-H^\top + R)^{-1} \\
+  ```
+3. Calculate a posteriori state and covariance predictions predictions
+  ```math
+  \begin{align}
+    \hat{x}_k &= \hat{x}_k^- + K_k(z_k - H \hat{x}_k^-) \\
+    P_k &= (I - K_kH)P_k^-
+  \end{align}
+  ```
 ## Systems
 
 ### Projectile Motion
