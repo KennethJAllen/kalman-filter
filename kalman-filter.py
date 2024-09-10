@@ -165,7 +165,7 @@ class RandomConstant(System):
         """The n x p control matrix B which maps control vector u to state space."""
         return None
 
-class FallingObject(System):
+class ProjectileMotion(System):
     """A system representing a falling object.
     Solves ode: x'' = g, where g = -9.81."""
     def __init__(self, initial_position: float = 0,
@@ -421,9 +421,9 @@ def main() -> None:
     plot_predictions(n_iters, 1, random_constant_states, title = "Random Constant")
 
     dt = 0.1
-    falling_object = FallingObject(dt = dt)
+    falling_object = ProjectileMotion(dt = dt)
     falling_object_states = kalman_process(falling_object, n_iters)
-    plot_predictions(n_iters, dt, falling_object_states, title = "Falling Object")
+    plot_predictions(n_iters, dt, falling_object_states, title = "Projectile Motion")
     dampened_oscillator = DampenedOscillator(dt = dt)
     harmonic_oscillator_states = kalman_process(dampened_oscillator, n_iters)
     plot_predictions(n_iters, dt, harmonic_oscillator_states, title = "Dampened Oscillator")
