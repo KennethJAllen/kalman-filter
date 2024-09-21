@@ -126,7 +126,7 @@ class RandomConstant(System):
     def __init__(self, std_measurement = 0.1, std_process = 0.00001):
         self.std_measurement = std_measurement
         self.std_process = std_process
-        initial_state = np.array([[np.random.uniform(0,1)]])
+        initial_state = np.array([[np.random.uniform(0,100)]])
         super().__init__(initial_state)
 
     def state_transition_matrix(self) -> np.ndarray:
