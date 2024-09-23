@@ -402,6 +402,7 @@ def plot_predictions(n_iters: int,
     measurements = states_over_time[1]
     true_observales = states_over_time[2]
     fig = plt.figure()
+    plt.figure(figsize=(10,10))
     plt.plot(time, predicted_observables, label=f"Kalman Filter Position Prediction. MSE: {round(kalman_mse,2)}", color='r', linewidth=1.5)
     fig.suptitle(f"Kalman filter for {title}", fontsize=20)
     plt.scatter(time, measurements, label=f"Measured Position. MSE: {round(measurement_mse,3)}", facecolors='none', color='b')
@@ -411,6 +412,7 @@ def plot_predictions(n_iters: int,
     plt.legend()
     directory = "images/"
     file_name = title.lower().replace(" ", "_")
+    
     plt.savefig(f"{directory}{file_name}.png")
 
 def main() -> None:
