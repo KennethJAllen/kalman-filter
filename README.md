@@ -210,8 +210,6 @@ Running the simulation, we get the following results
 
 ## Sources
 
-Welch, Greg, and Gary Bishop. "An introduction to the Kalman filter." (1995): 2.
-
-Rahmadsadli. “Object Tracking: Simple Implementation of Kalman Filter in Python.” Machine Learning Space, 8 Nov. 2023, [machinelearningspace.com/object-tracking-python](https://machinelearningspace.com/object-tracking-python/).
-
-How a Kalman Filter Works, in Pictures | Bzarg. 11 Aug. 2015, [www.bzarg.com/p/how-a-kalman-filter-works-in-pictures](https://www.bzarg.com/p/how-a-kalman-filter-works-in-pictures/).
+- [1] Welch, Greg, and Gary Bishop. "An introduction to the Kalman filter." (1995): 2.
+- [2] Rahmadsadli. “Object Tracking: Simple Implementation of Kalman Filter in Python.” Machine Learning Space, 8 Nov. 2023, [machinelearningspace.com/object-tracking-python](https://machinelearningspace.com/object-tracking-python/).
+- [3] How a Kalman Filter Works, in Pictures | Bzarg. 11 Aug. 2015, [www.bzarg.com/p/how-a-kalman-filter-works-in-pictures](https://www.bzarg.com/p/how-a-kalman-filter-works-in-pictures/).
