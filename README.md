@@ -87,7 +87,7 @@ We can now define the discrete Kalman filter algorithm in three parts. At each s
   ```
 2. Calculate Kalman gain
   ```math
-  K_k = P_k^- H^\top (HP_k^-H^\top + R)^{-1} \\
+  K_k = P_k^- H^\top (HP_k^-H^\top + R)^{-1}
   ```
 3. Calculate a posteriori state and covariance predictions predictions
   ```math
