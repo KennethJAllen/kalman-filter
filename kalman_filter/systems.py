@@ -1,7 +1,7 @@
 # pylint: disable=locally-disabled, invalid-name, too-many-instance-attributes, too-many-arguments
 
 import numpy as np
-import matplotlib.pyplot as plt
+
 
 class System:
     """An abstract system class. State represents the true state of the system."""
@@ -120,6 +120,7 @@ class System:
                 raise ValueError(f"The system control matrix does not have the correct dimensions: {control_mat_dims}")
         print("Dimensions validated.")
 
+
 class RandomConstant(System):
     """A state representing a random constant.
     We will assume there is a high measurement noise and low process noise."""
@@ -165,6 +166,7 @@ class RandomConstant(System):
         """The n x p control matrix B which maps control vector u to state space."""
         return None
 
+
 class ProjectileMotion(System):
     """A system representing a falling object.
     Solves ode: x'' = g, where g = -9.81."""
@@ -185,7 +187,7 @@ class ProjectileMotion(System):
         """The n x n state transition matrix A.
         Describes the transition from the previous state to the next state."""
         return np.array([[1,self.dt],[0,1]])
-    
+
     def process_noise(self) -> np.ndarray:
         """The n x 1 normally distributed process noise w representing noise in the state of the system."""
         std_position = self.std_acc * (self.dt)**2 / 2
@@ -223,6 +225,7 @@ class ProjectileMotion(System):
     def control_matrix(self) -> np.ndarray:
         """The n x p control matrix B which maps control vector u to state space."""
         return np.array([[self.dt**2 / 2], [self.dt]])
+
 
 class DampenedOscillator(System):
     """A system representing a dampened oscillator.
@@ -292,143 +295,7 @@ class DampenedOscillator(System):
         """The p x 1 control vector u.
         Represents influence on the state not described by the state itself."""
         return None
+
     def control_matrix(self) -> np.ndarray:
         """The n x p control matrix B which maps control vector u to state space."""
         return None
-
-class KalmanFilter:
-    """Implements the Kalman filter for given input data."""
-    def __init__(self, system: System):
-        self.system = system
-        self.predicted_state = system.get_state() # x
-        self.predicted_cov = system.get_state_covariance() # P
-        self.apriori_state = None # x-
-        self.apriori_cov = None # P-
-        self.kalman_gain = None # K
-
-    def update_apriori_state(self) -> None:
-        """Given state vector and control vector, returns a priori state vector estimate."""
-        A = self.system.state_transition_matrix()
-        B = self.system.control_matrix()
-        if B is not None and self.system.control_vector() is not None:
-            apriori_state =  A @ self.predicted_state + B @ self.system.control_vector()
-        else:
-            apriori_state =  A @ self.predicted_state
-        self.apriori_state = apriori_state
-
-    def update_apriori_cov(self) -> None:
-        """Given state vector and control vector, returns a priori covariance estimate."""
-        A = self.system.state_transition_matrix()
-        Q = self.system.process_noise_cov()
-        apriori_cov = A @ self.predicted_cov @ A.T + Q
-        self.apriori_cov = apriori_cov
-
-    def update_kalman_gain(self) -> None:
-        """Get the Kalman gain for a given state."""
-        R = self.system.measurement_noise_cov()
-        H = self.system.transformation_matrix()
-        numerator = self.apriori_cov @ H.T
-        denominator = H @ numerator + R
-        kalman_gain = np.linalg.lstsq(denominator.T, numerator.T, rcond=None)[0].T
-        self.kalman_gain = kalman_gain
-
-    def update_prediction(self, measurement: np.ndarray) ->  None:
-        """Get the a posteriori state prediction."""
-        H = self.system.transformation_matrix()
-        measurement_residual = measurement - H @ self.apriori_state
-        state = self.apriori_state + self.kalman_gain @ measurement_residual
-        self.predicted_state = state
-
-    def update_cov(self) ->  None:
-        """Get the a posteriori state covariance prediction."""
-        H = self.system.transformation_matrix()
-        n = np.shape(self.kalman_gain)[0]
-        I = np.eye(n)
-        state_cov = (I - self.kalman_gain @ H) @ self.apriori_cov
-        self.predicted_cov = state_cov
-
-    def update(self, measurement: np.ndarray) -> np.ndarray:
-        """Given a measurement, gives the next prediction via Kalman filter."""
-        self.update_apriori_state()
-        self.update_apriori_cov()
-        self.update_kalman_gain()
-        self.update_prediction(measurement)
-        self.update_cov()
-        return self.predicted_state
-
-def calculate_errors(states_over_time: tuple[list[float]]) -> None:
-    """Calculates the mean square errors for the Kalman prediction and the measurements.
-    states_over_time consists of predicted_observables, measuremets, and true_observales."""
-    predicted_observables = states_over_time[0]
-    measurements = states_over_time[1]
-    true_observales = states_over_time[2]
-    kalman_mse = ((predicted_observables - true_observales)**2).mean()
-    measurement_mse = ((measurements - true_observales)**2).mean()
-    return kalman_mse, measurement_mse
-
-def kalman_process(system: System, num_iters: int) -> tuple[np.ndarray]:
-    """Exectutes the kalman process for given parameters and number of iterations."""
-    kalman = KalmanFilter(system)
-    # initialize arrays recording states over time
-    true_observales = np.zeros(num_iters)
-    measurements = np.zeros(num_iters)
-    predicted_observables = np.zeros(num_iters)
-    # Update the state of the system and forcast with Kalman filter
-    for index in range(num_iters):
-        system.update_true_state() # update the actual system state to the next time step.
-        measurement = system.get_measurement()
-        predicted_state = kalman.update(measurement) # get the next Kalman filter prediction.
-        predicted_observable = kalman.system.transformation_matrix() @ predicted_state
-        true_observable = kalman.system.transformation_matrix() @ system.state
-        # record observables. One records the observables in the first position.
-        true_observales[index] = true_observable[0,0]
-        measurements[index] = measurement[0,0]
-        predicted_observables[index] = predicted_observable[0,0]
-
-    return predicted_observables, measurements, true_observales
-
-def plot_predictions(n_iters: int,
-                     dt: float,
-                     states_over_time: tuple[list[float]],
-                     title: str = "System") -> None:
-    """Plots the resulting measurements along with the kalman predictions and true states.
-    states_over_time consists of predicted_observables, measuremets, and true_observales."""
-    initial_time = 0
-    end_time = n_iters * dt + initial_time
-    time = np.arange(initial_time, end_time, dt)
-    kalman_mse, measurement_mse = calculate_errors(states_over_time)
-
-    predicted_observables = states_over_time[0]
-    measurements = states_over_time[1]
-    true_observales = states_over_time[2]
-    fig = plt.figure()
-    plt.figure(figsize=(10,10))
-    plt.plot(time, predicted_observables, label=f"Kalman Filter Position Prediction. MSE: {round(kalman_mse,2)}", color='r', linewidth=1.5)
-    fig.suptitle(f"Kalman filter for {title}", fontsize=20)
-    plt.scatter(time, measurements, label=f"Measured Position. MSE: {round(measurement_mse,3)}", facecolors='none', color='b')
-    plt.plot(time, true_observales, label='True Position', color='y', linewidth=1.5)
-    plt.xlabel('Time', fontsize=15)
-    plt.ylabel('Position', fontsize=15)
-    plt.legend()
-    directory = "images/"
-    file_name = title.lower().replace(" ", "_")
-    
-    plt.savefig(f"{directory}{file_name}.png")
-
-def main() -> None:
-    """Accessor for running the module."""
-    n_iters = 50
-    random_constant = RandomConstant()
-    random_constant_states = kalman_process(random_constant, n_iters)
-    plot_predictions(n_iters, 1, random_constant_states, title = "Random Constant")
-
-    dt = 0.1
-    falling_object = ProjectileMotion(dt = dt)
-    falling_object_states = kalman_process(falling_object, n_iters)
-    plot_predictions(n_iters, dt, falling_object_states, title = "Projectile Motion")
-    dampened_oscillator = DampenedOscillator(dt = dt)
-    harmonic_oscillator_states = kalman_process(dampened_oscillator, n_iters)
-    plot_predictions(n_iters, dt, harmonic_oscillator_states, title = "Dampened Oscillator")
-
-if __name__ == "__main__":
-    main()
